@@ -1,0 +1,315 @@
+***正则表达式
+**匹配IP的正则表达式：
+精确：((25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(25[0-5]|2[0-4]\d|1?\d?\d)
+or
+暴力：[0-9.]+
+or
+大致精度：([12]?\d?\d\.){3}[12]?\d?\d\
+*匹配如下数据
+192.168.1.10--[22/Nov/2018:14:12:43 +0800]
+答案:(?<ip>[0-9.]+).*\[(?<time>.+)\]
+**代号指示
+192.168.1.10--[22/Nov/2018:14:12:43 +0800] “GET” / HTTP/1.1
+     ip                   time                   url   proto
+
+***重定向
+				0	1	 2
+echo 12345 > f1		stdin	stdout stderr
+echo "the word" > /dev/{tcp|udp}/ip/port
+支持6中形式重定向
+1./dev/fd/fd
+2./dev/stdin
+3./dev/stdout
+4./dev/stderr
+5./dev/tcp/host/port
+6./dev/udp/host/port
+exec 退出
+**标准输出重定向
+[root@nfs ~]# echo 12345 > f1
+[root@nfs ~]# cat f1
+12345
+[root@nfs ~]# >f1
+[root@nfs ~]# cat f1
+[root@nfs ~]# exec 1>f1
+[root@nfs ~]# ls
+[root@nfs ~]# cat f1
+cat: f1：输入文件是输出文件
+[root@nfs ~]# echo 12345
+[root@nfs ~]# echo 67890
+[root@nfs ~]# 
+*新开终端跟踪输出
+[root@nfs ~]# tail -f f1
+注释：退出即可正常操作
+
+*其它形式
+[root@nfs ~]# exec 55>f1
+[root@nfs ~]# cat f1
+[root@nfs ~]# echo abc >&55
+[root@nfs ~]# cat f1
+abc
+[root@nfs ~]# exec 55<&-	//退出
+[root@nfs ~]# echo abc >&55
+
+**重定向交互网页信息
+[root@nfs ~]# vim exec_xinxi.sh
+#!/bin/bash
+exec 9<>/dev/tcp/$1/80
+echo -ne "GET / HTTP/1.1\r\n" >&9
+echo -ne "Host: $1\r\n" >&9
+echo -ne "User-Agent: curl" >&9
+echo -e "\r\n" >&9
+
+cat <&9
+#测试
+[root@nfs ~]# ./exec_xinxi.sh www.baidu.com
+
+
+**ES集群安装
+*安装java软件包
+]#yum list | grep openjdk
+]#yum -y install openjdk
+]#yum -y install java-1.8.0-openjdk
+]#java -version
+*安装elasticsearch软件包
+]#yum search elastic
+]#yum -y install elasticsearch
+*修改配置
+]# vim /etc/elasticsearch/elasticsearch.yml
+ 54 network.host: 192.168.3.114	#本机地址
+*启动服务
+]#systemctl start elasticsearch
+*检查服务
+]#ss -ltun
+tcp    LISTEN     0      50       ::ffff:192.168.3.114:9200               :::*                  
+tcp    LISTEN     0      50       ::ffff:192.168.3.114:9300 
+tcp    LISTEN     0      50       ::ffff:192.168.3.114:9300               :::* 
+*测试服务
+firefox浏览器输入网址：192.168.3.114:9200
+
+#公网指定IP：118.144.89.240
+curl -XPOST http://118.144.89.240/info.php
+curl -XPUT http://118.144.89.240/info.php
+curl http://118.144.89.240/info.php
+curl http://118.144.89.240/info.php -d cguser.retry 
+curl http://118.144.89.240/info.php -A "苍穹"
+#内网自建IP：192.168.3.114:9200(elasticsearch端口：9200)
+curl -XGET http://192.168.3.114:9200/_cat
+curl -XGET http://192.168.3.114:9200/_cat/health?v
+curl -XGET http://192.168.3.114:9200/_cat/nodes?help
+
+**安装ELK插件(db2虚拟机执行)
+注释：安装lftp，可实现访问挂载的ip下载相关资料
+yum -y install lftp
+lftp 192.168.3.254
+#安装插件
+rpm -ql elasticsearch
+cd /usr/share/elasticsearch/bin
+./plugin --help
+./plugin list
+./plugin install --help
+./plugin install file:///root/bigdesk-master.zip 
+./plugin list
+curl ftp://192.168.3.254/pub/
+./plugin install ftp://192.168.3.254/pub/elasticsearch-head-master.zip
+./plugin install ftp://192.168.3.254/pub/elasticsearch-kopf-master.zip
+./plugin list
+#测试网页插件信息
+http://192.168.3.116:9200/_plugin/head/
+http://192.168.3.116:9200/_plugin/kopf/
+http://192.168.3.116:9200/_plugin/bigdesk/
+
+**ELK的增删改查(PUT,DELETE,POST,GET)
+#集群状态索引属性查询
+http://192.168.3.116:9200/_cat/
+#创建索引
+[root@se5 bin]# curl -X PUT "http://192.168.1.65:9200/qun" -d '
+> {
+>     "settings":{
+>     "index":{
+>     "number_of_shards":5,        //分片数
+>     "number_of_replicas":1        //副本数
+>    }
+>   }
+> }'
+#查看创建的索引信息
+http://192.168.3.116:9200/_plugin/head/
+注释：http://192.168.3.116:9200/_cat/	?v:详细信息	?help:帮助信息
+
+#增加信息
+locale
+LANG=zh_CN.UTF-8	//设置编码
+curl -XPUT http://192.168.3.116:9200/qun/ai/1 -d '
+{
+  "姓名":"LDW",
+  "年龄":"52",
+  "爱好":"游玩",
+  "性别":"男"
+}'
+curl -XPUT http://192.168.3.116:9200/qun/ai/2 -d '
+{
+  "姓名":"DLF",
+  "年龄":"47",
+  "爱好":"work",
+  "性别":"女"
+}'
+curl -XPUT http://192.168.3.116:9200/qun/ai/6 -d '
+{
+  "姓名":"YZ",
+  "年龄":"7",
+  "爱好":"study",
+  "性别":"男"
+}'
+curl -XPUT http://192.168.3.116:9200/qun/ai/4 -d '
+{
+  "姓名":"LQY",
+  "年龄":"25",
+  "爱好":"lixiang",
+  "性别":"男"
+}'
+curl -XPUT http://192.168.3.116:9200/qun/ai/5 -d '
+{
+  "姓名":"LQC",
+  "年龄":"23",
+  "爱好":"jia",
+  "性别":"男"
+}'
+#修改信息
+curl -XPOST http://192.168.3.116:9200/qun/ai/3/_update -d '
+{
+  "doc":{"爱好":"run"}
+}'
+#查找信息
+[root@db2 bin]# curl [-X|-XGET] http://192.168.3.116:9200/qun/ai/3	//大致显示
+{"_index":"qun","_type":"ai","_id":"3","_version":2,"found":true,"_source":{"姓名":"LQX","年龄":"27","爱好":"run","性别":"男"}}
+[root@db2 bin]# curl http://192.168.3.116:9200/qun/ai/3?pretty //人性化显示
+{
+  "_index" : "qun",
+  "_type" : "ai",
+  "_id" : "3",
+  "_version" : 2,
+  "found" : true,
+  "_source" : {
+    "姓名" : "LQX",
+    "年龄" : "27",
+    "爱好" : "run",
+    "性别" : "男"
+  }
+#删除信息
+[root@db2 bin]# curl -XDELETE http://192.168.3.116:9200/qun/ai/6 //删除指定数据
+[root@db2 bin]# curl -XDELETE http://192.168.3.116:9200/qun/* //删除指定表数据
+
+**安装kibana插件(ansible虚拟机执行)
+]#yum search kibana
+]#yum install kibana
+[root@ansible ~]# rpm -qc kibana	//查看kibana配置位置
+/opt/kibana/config/kibana.yml
+[root@ansible ~]# vim /opt/kibana/config/kibana.yml 
+#取消注释行
+server.port: 5601
+server.host: "0.0.0.0"
+kibana.index: ".kibana"
+kibana.defaultAppId: "discover"
+elasticsearch.pingTimeout: 1500
+elasticsearch.requestTimeout: 30000
+elasticsearch.startupTimeout: 5000
+#修改成本机ip地址
+elasticsearch.url: "http://192.168.3.114:9200"
+[root@ansible ~]# systemctl start kibana
+#设置为开机自启动
+[root@ansible ~]# systemctl enable kibana
+#查看kibana的监听端口是否启动
+[root@ansible ~]# ss -ltupn | grep 5601
+
+**关键字替换
+]#查看全部信息
+]#ansible all -m setup
+]#查看过滤信息
+]#ansible all -m setup -a 'filter="ansible_hostname"'
+1.#声明变量{{ansible_hostname}}
+[root@ansible ~]# vim elasticsearch.yml
+node.name: {{ansible_hostname}}
+2.创建yml置换文件源
+[root@ansible ~]# vim modify_nodename.yml
+---
+- hosts: all
+  remote_user: root
+  tasks:
+     - template
+           src: elasticsearch.yml
+           dest: /etc/elasticsearch/elasticsearch.yml
+           owner: root
+           group: root
+           mode: 0644
+3.执行
+[root@ansible ~]# ansible-playbook modify_nodename.yml
+4.检测效果
+[root@ansible ~]# ansible all -m shell -a 'grep node.name /etc/elasticsearch/elasticsearch.yml'
+
+**导入数据并查看
+]#curl -XPOST "http://192.168.3.116:9200/_bulk" --data-binary @shakespeare.json 
+]#curl -XPOST "http://192.168.3.116:9200/xx/yy/_bulk" --data-binary @accounts.json 
+]#curl -XPOST "http://192.168.3.116:9200/_bulk" --data-binary @logs.jsonl
+[root@ansible ~]# curl -XGET http://192.168.3.116:9200/_mget?pretty -d '
+{
+   "docs":[
+     {
+        "_index": "shakespeare",
+        "_type" : "line",
+        "_id"   : 22
+     },
+     {
+        "_index": "xx",
+        "_type" : "yy",
+        "_id"   : 99
+     },
+     {
+        "_index": "logstash-2015.05.18",
+        "_type" : "log",
+        "_id"   : "AWf5MH4Uyo48BWjmDUSo"
+     }
+   ]
+ }'
+
+**logstash安装
+1.设置/etc/hosts,logstash要访问集群
+eg(仅供参考):
+]# vim /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.3.114   ansible
+192.168.3.157   web1
+192.168.3.183   web2
+192.168.3.159   db1
+192.168.3.116   db2
+192.168.3.126   cache
+2.安装依赖java-1.8.0-openjdk
+]# yum -y install java-1.8.0-openjdk
+3.安装logstash
+yum -y install logstash
+touch /etc/logstash/logstash.conf	//创建空配置文件
+cd /opt/logstash/bin/
+./logstash
+]# vim /etc/bashrc
+PATH=${PATH}:/opt/logstash/bin	//增加此行
+4.重新登陆后，重启以下操作
+logstash --version
+logstash-plugin list
+
+*设置全路径
+]# vim /etc/bashrc
+PATH=${PATH}:/opt/logstash/bin	//增加此行
+
+
+
+
+
+
+
+
+
+
+
+vim /etc/elasticsearch/elasticsearch.yml
+discovery.zen.ping.unicast.hosts: ["ansible", "web1", "web2"]
+systemctl start elasticsearch
+systemctl status elasticsearch
