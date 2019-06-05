@@ -137,7 +137,7 @@ http://192.168.3.116:9200/_plugin/head/
 
 #增加信息
 locale
-LANG=zh_CN.UTF-8	//设置编码
+LANG=zh_CN.UTF-8	//设置编
 curl -XPUT http://192.168.3.116:9200/qun/ai/1 -d '
 {
   "姓名":"LDW",
